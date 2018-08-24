@@ -16,5 +16,5 @@ Route::get('/', function () {
 });
 
 
-Route::get('api', 'TransactionController@getBankList');
+Route::get('apiBanks', 'TransactionController@getBankList');
 
