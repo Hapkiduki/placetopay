@@ -23,4 +23,9 @@ class Functions
         return new \SoapClient(self::$wsdl, ["trace" => true]);
     }
 
+    public static function getTypeBank()
+    {
+        return [''];
+    }
+
 }

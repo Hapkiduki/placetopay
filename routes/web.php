@@ -11,10 +11,10 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
+Route::get('/', 'TransactionController@index');
+//Route::get('apiBanks', 'TransactionController@getBankList');
+Route::post('transaction', 'TransactionController@sendTransaction');
+Route::any('resultTransaction', 'TransactionController@resultTransaction');
 
-Route::get('apiBanks', 'TransactionController@getBankList');
 
