@@ -28,6 +28,15 @@
         @endforeach
     </select>
 </div>
+
+<div class="form-group mt-3">
+  <label for="bankCode">Banco</label>
+  <select name="bankCode" required class="form-control col-md-4">
+        @foreach ($banks as $key => $item)
+            <option value="{{$key}}">{{ $item }}</option>
+        @endforeach
+    </select>
+</div>
     
     
 </div>

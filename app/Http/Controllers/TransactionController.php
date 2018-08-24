@@ -12,7 +12,6 @@ class TransactionController extends Controller
 {
     public function index()
     {
-    
         $bankInterface = [0 => 'PERSONAS', 1 => 'EMPRESAS'];
         $documentType = [
             'CC' => 'Cédula de ciudanía colombiana',
@@ -25,16 +24,17 @@ class TransactionController extends Controller
         return view('welcome', [
             'bankInterface' => $bankInterface,
             'documentType' => $documentType,
+            'banks' => $this->getBankList(),
         ]);
     }
 
-   /*public function getBankList()
+   public function getBankList()
     {
         $last_updated = Bank::get()->max('updated_at');
         $today = date('Y-m-d 00:00:00');
 
         if (!$last_updated < $today) {
-            return Bank::all()->lists('bankCode', 'bankName');
+            return Bank::pluck('bankName', 'bankCode')->toArray();
         }
 
         $client = Functions::getClient();
@@ -42,20 +42,31 @@ class TransactionController extends Controller
             $banks = $client->getBankList(['auth' => Functions::getAuth()]);
             
 
-            Bank::whereNotNull('id')->delete();
-            foreach ($banks as $item) {
-                $bank = new Bank;
-                $bank->bankCode = $item->bankCode;
-                $bank->bankName = $item->bankName;
-                $bank->save();
+            if (count($banks->getBankListResult->item) > 0) {
+                # code...
+                Bank::whereNotNull('id')->delete();
+            }
+            
+             /*echo "<pre>";
+            print_r ($banks);
+            echo "</pre>";
+            die; */
+            foreach ($banks->getBankListResult->item as $item) {
+                if (strlen($item->bankCode) < 7) {
+                    
+                    $bank = new Bank;
+                    $bank->bankCode = $item->bankCode;
+                    $bank->bankName = $item->bankName;
+                    $bank->save();
+                }
             }
 
-            return Bank::all()->lists('bankCode', 'bankName');
+            return Bank::pluck('bankName', 'bankCode')->toArray();
 
         } catch (Exception $e) {
             return $e;
         }
-    }*/
+    }
 
     public function sendTransaction()
     {
@@ -123,15 +134,20 @@ class TransactionController extends Controller
                 'auth' => Functions::getAuth(),
                 'transaction' => $params
             ]);
-            Session::put('PSETransactionID', $transaction->createTransactionResult->transactionID);
-            dd($transaction);
+            //1461482768 transaction id
+            //1461343 transaction id
+            //1461483264 transaction id
+            session(['PSETransactionID' => $transaction->createTransactionResult->transactionID]);
+
+            return redirect($transaction->createTransactionResult->bankURL);
+           // dd($transaction);
         } catch (Exception $e) {
             return $e;
         }
     }
 
-    public function resultTransaction() {
-        $transactionID = Session::get('PSETransactionID');
+    public function resultTransaction(Request $request) {
+        $transactionID = session('PSETransactionID');
         dd($transactionID);
     }
     
