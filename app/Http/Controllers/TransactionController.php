@@ -40,20 +40,20 @@ class TransactionController extends Controller
         $client = Functions::getClient();
         try {
             $banks = $client->getBankList(['auth' => Functions::getAuth()]);
-            
+
 
             if (count($banks->getBankListResult->item) > 0) {
                 # code...
                 Bank::whereNotNull('id')->delete();
             }
-            
+
              /*echo "<pre>";
             print_r ($banks);
             echo "</pre>";
             die; */
             foreach ($banks->getBankListResult->item as $item) {
                 if (strlen($item->bankCode) < 7) {
-                    
+
                     $bank = new Bank;
                     $bank->bankCode = $item->bankCode;
                     $bank->bankName = $item->bankName;
@@ -150,6 +150,19 @@ class TransactionController extends Controller
         $transactionID = session('PSETransactionID');
         dd($transactionID);
     }
-    
+
+    public function getTransactionInfo($transactionID){
+        $client = Functions::getClient();
+        try{
+            $response = $client->getTransactionInformation([
+                'auth' => Functions::getAuth(),
+                'transactionID' => $transactionID
+            ]);
+            dd($response);
+        } catch (Exception $e) {
+            return e;
+        }
+    }
+
 
 }

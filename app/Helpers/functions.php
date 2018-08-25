@@ -1,7 +1,6 @@
 <?php
 namespace App\Helpers;
 
-
 class Functions
 {
     private static $wsdl = "https://test.placetopay.com/soap/pse/?wsdl";
