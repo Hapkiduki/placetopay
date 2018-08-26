@@ -13,8 +13,8 @@
 
     <!-- Styles -->
     <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet"/>
-    <link href="{{ asset('plugins/select2/select2.min.css')}}" rel="stylesheet"/>
     <link href="{{ asset('css/app.css')}}" rel="stylesheet"/>
+    <link href="{{ asset('plugins/select2/select2.min.css')}}" rel="stylesheet"/>
 </head>
 <body>
 <div id="app">
@@ -25,8 +25,10 @@
 <!-- Scripts -->
 
 <script src="{{ asset('js/jquery.min.js') }}"></script>
-<script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/popper.min.js') }}"></script>
 <script src="{{ asset('js/bootstrap.min.js') }}"></script>
+<script src="{{ asset('plugins/select2/select2.min.js')}}"></script>
+<script src="{{ asset('js/app.js') }}"></script>
 @stack('scripts')
 </body>
 </html>

@@ -31,9 +31,10 @@ class TransactionController extends Controller
    public function getBankList()
     {
         $last_updated = Bank::get()->max('updated_at');
-        $today = date('Y-m-d 00:00:00');
+        $today = date('Y-m-d');
 
-        if (!$last_updated < $today) {
+        if ($last_updated <! $today) {
+            echo "$last_updated <! $today";die;
             return Bank::pluck('bankName', 'bankCode')->toArray();
         }
 
@@ -44,13 +45,14 @@ class TransactionController extends Controller
 
             if (count($banks->getBankListResult->item) > 0) {
                 # code...
-                Bank::whereNotNull('id')->delete();
+                return 'entra';
+                //Bank::whereNotNull('id')->delete();
             }
 
-             /*echo "<pre>";
+             echo "<pre>";
             print_r ($banks);
             echo "</pre>";
-            die; */
+            die;
             foreach ($banks->getBankListResult->item as $item) {
                 if (strlen($item->bankCode) < 7) {
 
@@ -64,15 +66,42 @@ class TransactionController extends Controller
             return Bank::pluck('bankName', 'bankCode')->toArray();
 
         } catch (Exception $e) {
-            return $e;
+            return $e->getMessage();
         }
     }
 
-    public function sendTransaction()
+    public function sendTransaction(Request $request)
     {
+        $personParams = [
+            'company' => 'Belt',
+            'country' => 'CO',
+        ];
+        $ip = request()->ip();
+        $params = [
+            'returnURL' => url('resultTransaction'),
+            'reference' => "$request->ip , $request->input('payer.documentType'),$request->input('payer.document')",
+            'description' => 'pago PlaceToPay',
+            'language' => 'ES',
+            'currency' => 'COP',
+            'totalAmount' => 2500.0,
+            'taxAmount' => 0.0,
+            'devolutionBase' => 0.0,
+            'tipAmount' => 0.0,
+            'ipAddress' => $ip,
+            'userAgent' => $_SERVER['HTTP_USER_AGENT'],
+        ];
+
+        $params +=  $request->except('_token');
+        $params['payer'] += $personParams;
+        $params += ['buyer' => $params['payer']];
+        $params += ['shipping' => $params['payer']];
+
+        return $params;
+
         $client = Functions::getClient();
         try {
-            $params = [
+
+            /*$params = [
                 'bankCode' => '1022',
                 'bankInterface' => '0',
                 'returnURL' => url('resultTransaction'),
@@ -128,7 +157,7 @@ class TransactionController extends Controller
                 ],
                 'ipAddress' => request()->ip(),
                 'userAgent' => $_SERVER['HTTP_USER_AGENT'],
-            ];
+            ];*/
 
             $transaction = $client->createTransaction([
                 'auth' => Functions::getAuth(),
@@ -139,10 +168,10 @@ class TransactionController extends Controller
             //1461483264 transaction id
             session(['PSETransactionID' => $transaction->createTransactionResult->transactionID]);
 
-            return redirect($transaction->createTransactionResult->bankURL);
-           // dd($transaction);
+            //return redirect($transaction->createTransactionResult->bankURL);
+            //dd($transaction);
         } catch (Exception $e) {
-            return $e;
+            return $e->getMessage();
         }
     }
 
@@ -160,7 +189,7 @@ class TransactionController extends Controller
             ]);
             dd($response);
         } catch (Exception $e) {
-            return e;
+            return $e->getMessage();
         }
     }
 
