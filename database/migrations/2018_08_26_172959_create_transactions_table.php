@@ -26,6 +26,7 @@ class CreateTransactionsTable extends Migration
 			$table->float('bankFactor', 9, 2)->nullable();
 			$table->string('responseReasonCode')->nullable();
 			$table->string('responseReasonText',255)->nullable();
+			$table->string('transactionState',20)->default('UNDEFINED');
             $table->timestamps();
         });
     }
