@@ -4,7 +4,7 @@ namespace App\Helpers;
 class Functions
 {
     private static $wsdl = "https://test.placetopay.com/soap/pse/?wsdl";
-    
+
     public static function getAuth()
     {
         $seed = date('c');
@@ -19,9 +19,13 @@ class Functions
 
     public static function getClient()
     {
-        return new \SoapClient(self::$wsdl, ["trace" => true]);
+        try {
+            return new \SoapClient(self::$wsdl, ["trace" => true]);
+        }catch(Exception $e){
+            return $e->getMessage();
+        }
     }
 
-   
+
 
 }

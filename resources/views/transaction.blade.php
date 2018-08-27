@@ -100,7 +100,7 @@
                 <div class="form-group mt-2">
 
                     <button class="btn btn-primary float-right m-1" type="submit">Pagar con PSE</button>
-                    <a href="{{ url('resultTransaction') }}"
+                    <a href="{{ url('list') }}"
                         class="card-link btn btn-outline-success float-right m-1">
                         Ver Transacciones
                     </a>

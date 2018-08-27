@@ -8,7 +8,6 @@ use SoapClient;
 use App\Bank;
 use App\Transaction;
 
-
 class TransactionController extends Controller
 {
     public function index()
@@ -26,10 +25,16 @@ class TransactionController extends Controller
             'bankInterface' => $bankInterface,
             'documentType' => $documentType,
             'banks' => $this->getBankList(),
-        ]);
+            ]);
     }
 
-   private function getBankList()
+    public function listTransactions()
+    {
+        $transactions = Transaction::orderBy('id', 'DESC')->paginate(10);
+        return View('transaction_list', compact('transactions'));
+    }
+
+    private function getBankList()
     {
         $last_updated = substr(Bank::get()->max('updated_at'), 0, 10);
         $today = substr(today(), 0, 10);
@@ -52,7 +57,7 @@ class TransactionController extends Controller
                 Bank::whereNotNull('id')->delete();
             }
 
-             /*echo "<pre>";
+            /*echo "<pre>";
             print_r ($banks);
             echo "</pre>";
             die;*/
@@ -83,7 +88,8 @@ class TransactionController extends Controller
         $ip = request()->ip();
         $params = [
             'returnURL' => url('resultTransaction'),
-            'reference' => $ip.",".$request->input('payer.documentType').",".$request->input('payer.document'),
+            'reference' => $ip.",".$request->input('payer.documentType').","
+                .$request->input('payer.document'),
             'description' => 'pago PlaceToPay',
             'language' => 'ES',
             'currency' => 'COP',
@@ -166,30 +172,27 @@ class TransactionController extends Controller
             $transaction = $client->createTransaction([
                 'auth' => Functions::getAuth(),
                 'transaction' => $params
-            ]);
-            //1461482768 transaction id
-            //1461343 transaction id
-            //1461483264 transaction id
-            if($transaction->createTransactionResult->returnCode != "SUCCESS"){
-                $request->session()->flash('status', ['danger',$transaction->createTransactionResult->responseReasonText]);
+                ]);
+                //1461482768 transaction id
+                //1461343 transaction id
+                //1461483264 transaction id
+                if($transaction->createTransactionResult->returnCode != "SUCCESS"){
+                    $request->session()->flash('status', ['danger',$transaction
+                    ->createTransactionResult->responseReasonText]);
+                    return back()->withInput();
+                }
+                session(['PSETransactionID' => $transaction->createTransactionResult->transactionID]);
+
+                $response = $transaction->createTransactionResult;
+                $trans = new Transaction;
+
+                $trans->create((array)$response);
+                return redirect($transaction->createTransactionResult->bankURL);
+                //dd($transaction);
+            } catch (Exception $e) {
+                $request->session()->flash('status', ['danger',$e->getMessage()]);
                 return back()->withInput();
             }
-            session(['PSETransactionID' => $transaction->createTransactionResult->transactionID]);
-            //foreach ($transaction->createTransactionResult as $key => $trans) {
-                    $response = $transaction->createTransactionResult;
-                    $trans = new Transaction;
-                //    $bank->$key = $trans;
-                $trans->create((array)$response);
-
-              //      $bank->save();
-            //}
-
-            return redirect($transaction->createTransactionResult->bankURL);
-            //dd($transaction);
-        } catch (Exception $e) {
-            $request->session()->flash('status', ['danger',$e->getMessage()]);
-            return back()->withInput();
-        }
     }
 
     public function resultTransaction(Request $request) {
@@ -197,19 +200,20 @@ class TransactionController extends Controller
         $request->session()->forget('PSETransactionID');
         $response = $this->getTransactionInfo($transactionID);
         Transaction::where('transactionID', $transactionID)
-          ->update([
-              'transactionCycle' => $response->transactionCycle,
-              'transactionState' => $response->transactionState,
-              'responseCode' => $response->responseCode,
-              'responseReasonCode' => $response->responseReasonCode,
-              'responseReasonText' => $response->responseReasonText,
-          ]);
-
-          return view('transaction_detail', [
-            'responseReasonText' => $response->responseReasonText,
+        ->update([
+            'transactionCycle' => $response->transactionCycle,
             'transactionState' => $response->transactionState,
-        ]);
-        //dd($transactionID);
+            'responseCode' => $response->responseCode,
+            'responseReasonCode' => $response->responseReasonCode,
+            'responseReasonText' => $response->responseReasonText,
+            ]);
+
+            return view('transaction_detail', [
+                'responseReasonText' => $response->responseReasonText,
+                'transactionState' => $response->transactionState,
+                'transactionID' => $transactionID,
+                ]);
+                //dd($transactionID);
     }
 
     private function getTransactionInfo($transactionID){
@@ -218,15 +222,14 @@ class TransactionController extends Controller
             $response = $client->getTransactionInformation([
                 'auth' => Functions::getAuth(),
                 'transactionID' => $transactionID
-            ]);
-            //dd($response);
-            return $response->getTransactionInformationResult;
-        } catch (Exception $e) {
+                ]);
+                //dd($response);
+                return $response->getTransactionInformationResult;
+            } catch (Exception $e) {
 
-            $request->session()->flash('status', ['danger',$e->getMessage()]);
-            //return back()->withInput();
-        }
+                $request->session()->flash('status', ['danger',$e->getMessage()]);
+                //return back()->withInput();
+            }
     }
-
 
 }
