@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Helpers\Functions;
 use SoapClient;
 use App\Bank;
+use App\Transaction;
 
 
 class TransactionController extends Controller
@@ -21,38 +22,40 @@ class TransactionController extends Controller
             'NIT' => 'Número de identificación tributaria',
             'SSN' => 'Social Security Number',
         ];
-        return view('welcome', [
+        return view('transaction', [
             'bankInterface' => $bankInterface,
             'documentType' => $documentType,
             'banks' => $this->getBankList(),
         ]);
     }
 
-   public function getBankList()
+   private function getBankList()
     {
-        $last_updated = Bank::get()->max('updated_at');
-        $today = date('Y-m-d');
+        $last_updated = substr(Bank::get()->max('updated_at'), 0, 10);
+        $today = substr(today(), 0, 10);
 
+        //echo "Tiempo actual es $today y la ultima fecha es $last_updated <br/>";
         if ($last_updated <! $today) {
-            echo "$last_updated <! $today";die;
+
             return Bank::pluck('bankName', 'bankCode')->toArray();
         }
 
-        $client = Functions::getClient();
+        //die;
         try {
+            $client = Functions::getClient();
             $banks = $client->getBankList(['auth' => Functions::getAuth()]);
 
 
             if (count($banks->getBankListResult->item) > 0) {
                 # code...
-                return 'entra';
-                //Bank::whereNotNull('id')->delete();
+                //return 'entra';
+                Bank::whereNotNull('id')->delete();
             }
 
-             echo "<pre>";
+             /*echo "<pre>";
             print_r ($banks);
             echo "</pre>";
-            die;
+            die;*/
             foreach ($banks->getBankListResult->item as $item) {
                 if (strlen($item->bankCode) < 7) {
 
@@ -66,7 +69,8 @@ class TransactionController extends Controller
             return Bank::pluck('bankName', 'bankCode')->toArray();
 
         } catch (Exception $e) {
-            return $e->getMessage();
+            $request->session()->flash('status', ['danger',$e->getMessage()]);
+            return [];
         }
     }
 
@@ -79,7 +83,7 @@ class TransactionController extends Controller
         $ip = request()->ip();
         $params = [
             'returnURL' => url('resultTransaction'),
-            'reference' => "$request->ip , $request->input('payer.documentType'),$request->input('payer.document')",
+            'reference' => $ip.",".$request->input('payer.documentType').",".$request->input('payer.document'),
             'description' => 'pago PlaceToPay',
             'language' => 'ES',
             'currency' => 'COP',
@@ -96,10 +100,10 @@ class TransactionController extends Controller
         $params += ['buyer' => $params['payer']];
         $params += ['shipping' => $params['payer']];
 
-        return $params;
+        //return $params;
 
-        $client = Functions::getClient();
         try {
+            $client = Functions::getClient();
 
             /*$params = [
                 'bankCode' => '1022',
@@ -166,30 +170,61 @@ class TransactionController extends Controller
             //1461482768 transaction id
             //1461343 transaction id
             //1461483264 transaction id
+            if($transaction->createTransactionResult->returnCode != "SUCCESS"){
+                $request->session()->flash('status', ['danger',$transaction->createTransactionResult->responseReasonText]);
+                return back()->withInput();
+            }
             session(['PSETransactionID' => $transaction->createTransactionResult->transactionID]);
+            //foreach ($transaction->createTransactionResult as $key => $trans) {
+                    $response = $transaction->createTransactionResult;
+                    $trans = new Transaction;
+                //    $bank->$key = $trans;
+                $trans->create((array)$response);
 
-            //return redirect($transaction->createTransactionResult->bankURL);
+              //      $bank->save();
+            //}
+
+            return redirect($transaction->createTransactionResult->bankURL);
             //dd($transaction);
         } catch (Exception $e) {
-            return $e->getMessage();
+            $request->session()->flash('status', ['danger',$e->getMessage()]);
+            return back()->withInput();
         }
     }
 
     public function resultTransaction(Request $request) {
         $transactionID = session('PSETransactionID');
-        dd($transactionID);
+        $request->session()->forget('PSETransactionID');
+        $response = $this->getTransactionInfo($transactionID);
+        Transaction::where('transactionID', $transactionID)
+          ->update([
+              'transactionCycle' => $response->transactionCycle,
+              'transactionState' => $response->transactionState,
+              'responseCode' => $response->responseCode,
+              'responseReasonCode' => $response->responseReasonCode,
+              'responseReasonText' => $response->responseReasonText,
+          ]);
+
+          return view('transaction_detail', [
+            'responseReasonText' => $response->responseReasonText,
+            'transactionState' => $response->transactionState,
+        ]);
+        //dd($transactionID);
     }
 
-    public function getTransactionInfo($transactionID){
+    private function getTransactionInfo($transactionID){
         $client = Functions::getClient();
         try{
             $response = $client->getTransactionInformation([
                 'auth' => Functions::getAuth(),
                 'transactionID' => $transactionID
             ]);
-            dd($response);
+            //dd($response);
+            return $response->getTransactionInformationResult;
         } catch (Exception $e) {
-            return $e->getMessage();
+
+            $request->session()->flash('status', ['danger',$e->getMessage()]);
+            //return back()->withInput();
         }
     }
 

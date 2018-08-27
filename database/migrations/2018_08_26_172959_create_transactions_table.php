@@ -15,6 +15,17 @@ class CreateTransactionsTable extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('transactionID');
+            $table->string('sessionID');
+			$table->string('returnCode');
+			$table->string('trazabilityCode')->nullable();
+			$table->integer('transactionCycle')->nullable();
+			$table->string('bankCurrency',3)->nullable();
+			$table->string('bankURL',255)->nullable();
+			$table->integer('responseCode')->nullable();
+			$table->float('bankFactor', 9, 2)->nullable();
+			$table->string('responseReasonCode')->nullable();
+			$table->string('responseReasonText',255)->nullable();
             $table->timestamps();
         });
     }

@@ -13,8 +13,8 @@
 
 
 Route::get('/', 'TransactionController@index');
-Route::get('apiBanks', 'TransactionController@getBankList');
-Route::get('transactionInfo/{id}', 'TransactionController@getTransactionInfo');
+//Route::get('apiBanks', 'TransactionController@getBankList');
+//Route::get('transactionInfo/{id}', 'TransactionController@getTransactionInfo');
 Route::post('transaction', 'TransactionController@sendTransaction');
 Route::any('resultTransaction', 'TransactionController@resultTransaction');
 
